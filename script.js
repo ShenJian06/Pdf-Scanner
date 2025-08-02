@@ -81,24 +81,36 @@ const tools = {
   },
 
 scan: () => {
-  if (!currentImage) return;
-  let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  let data = imageData.data;
+  const video = document.getElementById("video");
+  const captureBtn = document.getElementById("captureBtn");
 
-  // Convert to grayscale + strong contrast (binarization style)
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i], g = data[i + 1], b = data[i + 2];
-    const avg = 0.299 * r + 0.587 * g + 0.114 * b;
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+      video.srcObject = stream;
+      video.style.display = "block";
+      captureBtn.style.display = "inline-block";
+      canvas.style.display = "none";
 
-    // Apply thresholding (binary scan effect)
-    const threshold = 160;
-    const value = avg > threshold ? 255 : 0;
+      captureBtn.onclick = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        currentImage = new Image();
+        currentImage.src = canvas.toDataURL();
 
-    data[i] = data[i + 1] = data[i + 2] = value;
-  }
-
-  ctx.putImageData(imageData, 0, 0);
+        // Stop camera
+        stream.getTracks().forEach(track => track.stop());
+        video.style.display = "none";
+        captureBtn.style.display = "none";
+        canvas.style.display = "block";
+      };
+    })
+    .catch(err => {
+      alert("Camera access denied or not available.");
+      console.error(err);
+    });
 },
+
 
 
   reset: () => {
